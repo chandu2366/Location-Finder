@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="myApp">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../base.css"/>
+    <title>Demo</title>
+    <script src="bower_components/angular/angular.min.js"></script>
+
+    <script>
+        /*  you need to generate an API key uisng gmail. you might need to get it from create credential.
+         Create Credential ==> API key
+         Got the Browser 'key' and then
+         need to enable google
+         1) Google Maps Geocoding API
+         *  2) Google Maps Geolocation API
+         * 3) Google Maps JavaScript API
+         */
+
+        // assign your key here and the geolocation should work. This does not need express and node.
+        var key = '';
+
+        var myApp = angular.module('myApp', []);
+
+        myApp.controller('myController', function($scope){
+            $scope.message = 'hello message';
+            console.log(Browser.key);
+        });
+
+        myApp.directive('address', function(geo, $http){
+            return {
+                templateUrl: '_address.html',
+                $scope: {},
+                link: function ($scope) {
+                    $scope.state = 'california';
+
+                    geo.get().then(function (data) {
+                        console.log('lat : ' + data.coords.latitude , 'long : ' +  data.coords.longitude);
+                        var url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + data.coords.latitude + ',' + data.coords.longitude + '&key=' + key;
+                        $http.get(url).then(function (obj) {
+                //         console.log(obj);
+
+                            $scope.address={};
+
+                            var addressComponents = obj.data.results[0].address_components;
+
+                            for (i=0; i < obj.data.results.length; i++) {
+
+                                $scope.address[addressComponents[i].types[0]] = addressComponents[i].long_name;
+
+                             }
+
+
+                        })
+                    });
+                }
+            }
+        });
+
+        myApp.factory('geo', function($q){
+            return {
+
+                get: function () {
+
+                    return $q(function (resolve, reject) {
+                        navigator.geolocation.getCurrentPosition(function (coords) {
+                            resolve(coords);
+                        }, function () {
+                            reject(arguments);
+                        }, {
+                            enableHighAccuracy: true,
+                            timeout: 10000,
+                            maximumAge: 5000
+                        });
+                    });
+                }
+            }
+        });
+
+    </script>
+</head>
+<body>
+
+<div address>{{message}}</div>
+
+</body>
+</html>
